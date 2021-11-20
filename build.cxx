@@ -96,7 +96,7 @@ Install()
 	path incdir(root+"include/directdb/");
 	if(!incdir.dirname_exists())
 	  incdir.mkdir();
-        path_list ipl(path("./"), "*.hpp");
+        path_list ipl(path("./"), "\\.hpp$");
         ipl.copy_to(incdir, PCF_FORCE);
     } catch (const c4s_exception& ce) {
         cout << "Install failed: " << ce.what() << '\n';
