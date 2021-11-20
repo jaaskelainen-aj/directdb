@@ -93,8 +93,11 @@ Install()
         }
         if (count == 0)
             cout << "Warning: No libraries copied. Did you build first?\n";
+	path incdir(root+"include/directdb/");
+	if(!incdir.dirname_exists())
+	  incdir.mkdir();
         path_list ipl(path("./"), "*.hpp");
-        ipl.copy_to(path(root + "include/directdb/"), PCF_FORCE);
+        ipl.copy_to(incdir, PCF_FORCE);
     } catch (const c4s_exception& ce) {
         cout << "Install failed: " << ce.what() << '\n';
         return 1;
