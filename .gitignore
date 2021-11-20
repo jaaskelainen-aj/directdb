@@ -1,0 +1,6 @@
+debug
+release
+attic
+ddbtest/basic
+ddbtest/*.db
+remote-build.sh

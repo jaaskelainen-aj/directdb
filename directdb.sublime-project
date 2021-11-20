@@ -1,0 +1,11 @@
+{
+    "folders": [
+        { "path": ".", "folder_exclude_patterns": ["debug", "release"], "file_exclude_patterns": ["*.dSYM"] }
+    ],
+    "build_systems": [
+        { "name": "R build", "shell_cmd": "$project_path/remote-build.sh", "file_regex": "^(.*):(\\d+):(\\d+):([^\\n]+)" }
+    ],
+    "settings": {
+        "rulers": [100]
+    }
+}
