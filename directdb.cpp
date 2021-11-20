@@ -183,12 +183,9 @@ Database::CleanReverse(string& str, CLEANTYPE /*ct*/)
 int
 Database::PrintNumber(char* buffer, const char* format, double number)
 {
-    register int i;
-    int bLen = 0;
-
-    bLen = sprintf(buffer, format, number);
+    int bLen = sprintf(buffer, format, number);
     if (commaDecimal) {
-        for (i = 0; i < bLen; i++) {
+        for (int i = 0; i < bLen; i++) {
             if (buffer[i] == ',') {
                 buffer[i] = '.';
                 break;

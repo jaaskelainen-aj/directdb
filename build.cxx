@@ -6,29 +6,29 @@
  * Disclaimer of Warranty: Work is provided on an "as is" basis, without warranties or conditions of
  * any kind
  */
+#include <iostream>
 #include <cpp4scripts.hpp>
 
+using namespace std;
 using namespace c4s;
 
 program_arguments args;
 
-// ============== LINUX
-// ===============================================================================
+// -------------------------------------------------------------------------------------------------
 #if defined(__linux) || defined(__APPLE__)
-
-int
+BUILD_STATUS
 Build()
 {
-    BUILD flags(BUILD::LIB);
-    flags |= args.is_set("-deb") ? BUILD::DEB : BUILD::REL;
+    builder_gcc make("directdb", &cout);
+    make.set(BUILD::LIB);
+    make.add(args.is_set("-deb") ? BUILD::DEB : BUILD::REL);
     if (args.is_set("-V"))
-        flags |= BUILD::VERBOSE;
+        make.add(BUILD::VERBOSE);
     if (args.is_set("-ccdb"))
-        flags |= BUILD::CC_DB;
-    builder_gcc make("directdb", &cout, flags);
+        make.add(BUILD::EXPORT);
     //  TODO: have the ccdb path setting to set flags as well.
     make.add_comp("-Wno-ctor-dtor-privacy -Wnon-virtual-dtor -I/usr/local/include/cpp4scripts "
-                  "-I/usr/include/postgresql/ -I/usr/include/postgresql/libpq "
+                  "-I/usr/include/postgresql "
                   "-I/usr/local/include/sqlite3");
     make.add_comp("-fno-rtti");
     if (args.is_set("-deb"))
@@ -37,21 +37,17 @@ Build()
         make.add_comp("-DC4S_LOG_LEVEL=3");
     return make.build();
 }
-
-// ============= MS-WINDOWS
-// ===========================================================================
+// -------------------------------------------------------------------------------------------------
 #else
-
-int
+BUILD_STATUS
 Build()
 {
-    cppFiles.add(files_win, ' ');
-
+    builder_vc make("directdb", &cout);
     BUILD flags(BUILD::LIB);
-    flags |= args.is_set("-deb") ? BUILD::DEB : BUILD::REL;
+    make.set(BUILD::LIB);
+    make.add(args.is_set("-deb") ? BUILD::DEB : BUILD::REL);
     if (args.is_set("-V"))
-        flags |= BUILD::VERBOSE;
-    builder_vc make("directdb", &cout, flags);
+        make.add(BUILD::VERBOSE);
     // make.add_comp("/DUSE_SSL /I$(BINC)\\cpp4scripts /I$(BINC)\\libpq"); // /I$(LIBPQ)\\include
     if (args.is_set("-deb")) {
         make.add_comp("/DC4S_LOG_LEVEL=2");
@@ -59,13 +55,10 @@ Build()
             make.add_comp("/D_DEBUG");
     } else
         make.add_comp("/DC4S_LOG_LEVEL=4");
-
     return make.build();
 }
-
 #endif
-
-// ====================================================================================================
+// -------------------------------------------------------------------------------------------------
 int
 Clean()
 {
@@ -79,8 +72,7 @@ Clean()
     cout << "Build directories cleaned!\n";
     return 0;
 }
-
-// ====================================================================================================
+// -------------------------------------------------------------------------------------------------
 int
 Install()
 {
@@ -109,12 +101,11 @@ Install()
     }
     return 0;
 }
-
-// ====================================================================================================
+// -------------------------------------------------------------------------------------------------
 int
 main(int argc, char** argv)
 {
-    int rv = 1;
+    BUILD_STATUS rv = BUILD_STATUS::OK;
     string mode, binding;
 
     // Parameters
@@ -146,5 +137,5 @@ main(int argc, char** argv)
         cout << "Build failed: " << ce.what() << '\n';
     }
     cout << "Build finished.\n";
-    return rv;
+    return (int) rv;
 }

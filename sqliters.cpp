@@ -16,6 +16,8 @@
 #define __DDB_SQLITE3__
 #include "directdb.hpp"
 
+using namespace std;
+
 namespace ddb {
 
 // -------------------------------------------------------------------------------------------------

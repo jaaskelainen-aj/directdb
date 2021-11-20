@@ -15,6 +15,8 @@
 #define __DDB_POSTGRE__
 #include "directdb.hpp"
 
+using namespace std;
+
 namespace ddb {
 
 void
