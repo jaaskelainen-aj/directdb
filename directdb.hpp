@@ -25,8 +25,9 @@ enum class RDBM
 // Library data types
 enum class DT
 {
-    INT, // 32bit int
-    STR, // String wxString or STL string.
+    INT,  // 32bit integer
+    LONG, // 64bit integer
+    STR,  // String wxString or STL string.
     BOOL,
     BIT,  // MSSQL: conversion to char.
     TIME, // Timestamp: Date and time

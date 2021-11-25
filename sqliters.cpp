@@ -112,6 +112,13 @@ SqliteRowSet::GetNext()
                 *(static_cast<int*>(field->data)) = sqlite3_column_int(stmt, nField);
             break;
 
+        case DT::LONG:
+            if (col_type == SQLITE_NULL)
+                *(static_cast<int*>(field->data)) = 0;
+            else
+                *(static_cast<int*>(field->data)) = sqlite3_column_int64(stmt, nField);
+            break;
+
         case DT::STR:
             if (col_type == SQLITE_NULL)
                 static_cast<string*>(field->data)->clear();

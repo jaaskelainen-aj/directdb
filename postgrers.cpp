@@ -109,6 +109,14 @@ PostgreRowSet::GetNext()
                     count++;
                 }
                 break;
+            case DT::LONG:
+                if (resultStr[0] == '\0')
+                    *(static_cast<long*>(field->data)) = 0;
+                else {
+                    *(static_cast<long*>(field->data)) = strtol(resultStr, 0, 10);
+                    count++;
+                }
+                break;
             case DT::STR:
                 if (resultStr[0] == '\0')
                     static_cast<string*>(field->data)->clear();
