@@ -44,6 +44,8 @@ Database::Database()
 
     scratch_size = 0x200;
     scratch_buffer = new char[scratch_size];
+
+    RowSet::InitQueryBuffer();
 }
 // -------------------------------------------------------------------------------------------------
 Database::~Database()
@@ -54,6 +56,7 @@ Database::~Database()
 {
     if (scratch_buffer)
         delete[] scratch_buffer;
+    RowSet::DeleteQueryBuffer();
 }
 // -------------------------------------------------------------------------------------------------
 string

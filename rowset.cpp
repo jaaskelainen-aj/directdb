@@ -16,6 +16,9 @@
 
 namespace ddb {
 
+size_t RowSet::query_max;
+char*  RowSet::query_buffer;
+
 // -------------------------------------------------------------------------------------------------
 BoundField::BoundField(DT type_in, void* data_in)
   : type(type_in)
@@ -49,7 +52,6 @@ RowSet::RowSet()
     field_count = 0;
     row_count = 0;
 }
-
 // -------------------------------------------------------------------------------------------------
 RowSet::~RowSet()
 /*!
@@ -66,7 +68,27 @@ RowSet::~RowSet()
     }
     fieldRoot = 0;
 }
-
+// -------------------------------------------------------------------------------------------------
+void // static function
+RowSet::InitQueryBuffer() 
+{
+    query_max = 0x400;
+    query_buffer = new char[query_max];
+}
+// -------------------------------------------------------------------------------------------------
+char* // static function
+RowSet::GetQueryBuffer(std::iostream& sql)
+{
+    size_t len = sql.tellp();
+    if (len > query_max-1) {
+        delete[] query_buffer;
+        query_max = len + 100;
+        query_buffer = new char[query_max];
+    }
+    sql.read(query_buffer, len);
+    query_buffer[len] = 0;
+    return query_buffer;
+}
 // -------------------------------------------------------------------------------------------------
 bool
 RowSet::ValidateBind(DT type, void* data)

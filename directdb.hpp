@@ -396,16 +396,27 @@ class RowSet
     size_t GetFieldCount() { return field_count; }
     /*! Returns current row count */
     size_t GetRowCount() { return row_count; }
-    std::ostringstream query; //!< Query statement.
+
+    std::stringstream query; //!< Query statement.
 
   protected:
     RowSet();
     bool InsertField(BoundField* newField);
     bool ValidateBind(DT type, void* data);
+    static char* GetQueryBuffer(std::iostream&);
 
     BoundField* fieldRoot; //!< First field of the bound field list.
     size_t field_count;    //!< Number of fields bound for this row set.
     size_t row_count;
+
+  private:
+    static void InitQueryBuffer();    // Called by Database
+    static void DeleteQueryBuffer() { // Called by Database
+        if (query_buffer)
+            delete[] query_buffer;
+    }
+    static size_t query_max;
+    static char *query_buffer;
 };
 
 // -------------------------------------------------------------------------------------------------

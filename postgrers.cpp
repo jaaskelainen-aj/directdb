@@ -62,7 +62,7 @@ PostgreRowSet::Query()
     if (result_complete == false)
         Reset();
 
-    result = PQexec(db->GetPGConn(), query.str().c_str());
+    result = PQexec(db->GetPGConn(), GetQueryBuffer(query));
     if (!result || PQresultStatus(result) != PGRES_TUPLES_OK) {
         CS_VAPRT_ERRO("PostgreRowSet::Query failed: %s", PQresultErrorMessage(result));
         db->SetErrorId(8);
