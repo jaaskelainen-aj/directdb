@@ -15,10 +15,11 @@ using namespace c4s;
 program_arguments args;
 
 // -------------------------------------------------------------------------------------------------
+#if defined(__linux) || defined(__APPLE__)
 BUILD_STATUS
 Build()
 {
-    builder_gcc make("directdb", &cout);
+    builder_gcc make("directdb", static_cast<iostream*>(&cout));
     make.set(BUILD::LIB);
     make.add(args.is_set("-deb") ? BUILD::DEB : BUILD::REL);
     if (args.is_set("-V"))
@@ -36,6 +37,27 @@ Build()
         make.add_comp("-DC4S_LOG_LEVEL=3");
     return make.build();
 }
+// -------------------------------------------------------------------------------------------------
+#else
+BUILD_STATUS
+Build()
+{
+    builder_vc make("directdb", &cout);
+    BUILD flags(BUILD::LIB);
+    make.set(BUILD::LIB);
+    make.add(args.is_set("-deb") ? BUILD::DEB : BUILD::REL);
+    if (args.is_set("-V"))
+        make.add(BUILD::VERBOSE);
+    // make.add_comp("/DUSE_SSL /I$(BINC)\\cpp4scripts /I$(BINC)\\libpq"); // /I$(LIBPQ)\\include
+    if (args.is_set("-deb")) {
+        make.add_comp("/DC4S_LOG_LEVEL=2");
+        if (!wxmode)
+            make.add_comp("/D_DEBUG");
+    } else
+        make.add_comp("/DC4S_LOG_LEVEL=4");
+    return make.build();
+}
+#endif
 // -------------------------------------------------------------------------------------------------
 int
 Clean()

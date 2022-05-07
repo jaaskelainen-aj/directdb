@@ -55,20 +55,18 @@ Postgre::~Postgre()
 bool
 Postgre::Connect(const char* constr)
 {
-    // See section 30.1 in PostgreSQL manual
-    // hostaddr=10.1.1.3 dbname=menacon user=app password=whatever connect_timeout=10
-    // host=www.menacon.fi sslmode=require sslcert=client.crt sslkey=client.key
     if (!constr) {
-        SetErrorId(3);
+        SetLastError("Connect: empty or incorrect connections string.");
         return false;
     }
     connection = PQconnectdb(constr);
 
     // check to see that the backend connection was successfully made
     if (PQstatus(connection) == CONNECTION_BAD) {
+        SetLastError("Postgre - Connection failure:");
+        AppendLastError(PQerrorMessage(connection));
         PQfinish(connection);
         connection = 0;
-        SetErrorId(4);
         return false;
     }
     flags |= FLAG_CONNECTED;
@@ -106,7 +104,7 @@ RowSet*
 Postgre::CreateRowSet()
 {
     if (!(flags & FLAG_CONNECTED)) {
-        SetErrorId(5);
+        SetLastError("Attempt to use member functions without a connection to the database.");
         return 0;
     }
     return new PostgreRowSet(this);
@@ -115,7 +113,7 @@ bool
 Postgre::CreateRowSet(RSInterface* cif)
 {
     if (!(flags & FLAG_CONNECTED)) {
-        SetErrorId(5);
+        SetLastError("Attempt to use member functions without a connection to the database.");
         return false;
     }
     PostgreRowSet* rs = new PostgreRowSet(this);
@@ -142,11 +140,11 @@ bool
 Postgre::StartTransaction()
 {
     if (!(flags & FLAG_CONNECTED)) {
-        SetErrorId(5);
+        SetLastError("Attempt to use member functions without a connection to the database.");
         return false;
     }
     if (flags & FLAG_TRANSACT_ON) {
-        SetErrorId(6);
+        SetLastError("Transaction start: Transaction is already on.");
         return false;
     }
 
@@ -162,11 +160,11 @@ bool
 Postgre::Commit()
 {
     if (!(flags & FLAG_CONNECTED)) {
-        SetErrorId(5);
+        SetLastError("Attempt to use member functions without a connection to the database.");
         return false;
     }
     if (!(flags & FLAG_TRANSACT_ON)) {
-        SetErrorId(7);
+        SetLastError("Commit/RollBack: The transaction has not been started.");
         return false;
     }
 
@@ -182,11 +180,11 @@ bool
 Postgre::RollBack()
 {
     if (!(flags & FLAG_CONNECTED)) {
-        SetErrorId(5);
+        SetLastError("Attempt to use member functions without a connection to the database.");
         return false;
     }
     if (!(flags & FLAG_TRANSACT_ON)) {
-        SetErrorId(7);
+        SetLastError("Commit/RollBack: The transaction has not been started.");
         return false;
     }
 
@@ -206,10 +204,9 @@ Postgre::ExecuteIntFunction(const string& query, int& val)
     PGresult* result = PQexec(connection, query.c_str());
 
     if (!result || PQresultStatus(result) != PGRES_TUPLES_OK) {
-        CS_PRINT_ERRO("Postgre::ExecuteIntFunction failed");
-        errorId = 19;
         if (result) {
-            CS_PRINT_ERRO(PQresultErrorMessage(result));
+            SetLastError("ExecuteIntFunction failed: ");
+            AppendLastError(PQresultErrorMessage(result));
             PQclear(result);
         }
         return false;
@@ -232,10 +229,9 @@ Postgre::ExecuteLongFunction(const string& query, long& val)
     PGresult* result = PQexec(connection, query.c_str());
 
     if (!result || PQresultStatus(result) != PGRES_TUPLES_OK) {
-        CS_PRINT_ERRO("Postgre::ExecuteLongFunction failed");
-        errorId = 19;
         if (result) {
-            CS_PRINT_ERRO(PQresultErrorMessage(result));
+            SetLastError("ExecuteLongFunction failed: ");
+            AppendLastError(PQresultErrorMessage(result));
             PQclear(result);
         }
         return false;
@@ -258,10 +254,9 @@ Postgre::ExecuteDoubleFunction(const string& query, double& val)
     PGresult* result = PQexec(connection, query.c_str());
 
     if (!result || PQresultStatus(result) != PGRES_TUPLES_OK) {
-        CS_PRINT_ERRO("Postgre::ExecuteDoubleFunction failed");
-        errorId = 19;
         if (result) {
-            CS_PRINT_ERRO(PQresultErrorMessage(result));
+            SetLastError("ExecuteDoubleFunction failed: ");
+            AppendLastError(PQresultErrorMessage(result));
             PQclear(result);
         }
         return false;
@@ -289,10 +284,9 @@ Postgre::ExecuteBoolFunction(const string& query, bool& val)
     PGresult* result = PQexec(connection, query.c_str());
 
     if (!result || PQresultStatus(result) != PGRES_TUPLES_OK) {
-        CS_PRINT_ERRO("Postgre::ExecuteBoolFunction failed");
-        errorId = 19;
         if (result) {
-            CS_PRINT_ERRO(PQresultErrorMessage(result));
+            SetLastError("ExecuteBoolFunction failed: ");
+            AppendLastError(PQresultErrorMessage(result));
             PQclear(result);
         }
         return false;
@@ -319,10 +313,9 @@ Postgre::ExecuteStrFunction(const string& query, string& answer)
         return false;
     PGresult* result = PQexec(connection, query.c_str());
     if (!result || PQresultStatus(result) != PGRES_TUPLES_OK) {
-        CS_PRINT_ERRO("Postgre::ExecuteStrFunction failed.");
-        errorId = 19;
         if (result) {
-            CS_PRINT_ERRO(PQresultErrorMessage(result));
+            SetLastError("ExecuteStrFunction failed: ");
+            AppendLastError(PQresultErrorMessage(result));
             PQclear(result);
         }
         return false;
@@ -331,7 +324,6 @@ Postgre::ExecuteStrFunction(const string& query, string& answer)
         PQclear(result);
         return false;
     }
-    errorId = 0;
     char* resultStr = PQgetvalue(result, 0, 0);
     if (resultStr) {
         answer = resultStr;
@@ -356,10 +348,9 @@ Postgre::ExecuteDateFunction(const string& query, tm& val)
     PGresult* result = PQexec(connection, query.c_str());
 
     if (!result || PQresultStatus(result) != PGRES_TUPLES_OK) {
-        CS_PRINT_ERRO("Postgre::ExecuteDateFunction failed");
-        errorId = 19;
         if (result) {
-            CS_PRINT_ERRO(PQresultErrorMessage(result));
+            SetLastError("ExecuteDateFunction failed: ");
+            AppendLastError(PQresultErrorMessage(result));
             PQclear(result);
         }
         return false;
@@ -387,9 +378,9 @@ Postgre::ExecuteModify(const string& modify)
         return -1;
     PGresult* result = PQexec(connection, modify.c_str());
     if (!result || PQresultStatus(result) != PGRES_COMMAND_OK) {
-        CS_VAPRT_ERRO("Postgre::ExecuteModify - Failed. PQStatus=%d", PQresultStatus(result));
         if (result) {
-            CS_PRINT_ERRO(PQresultErrorMessage(result));
+            SetLastError("ExecuteModify - Failed: ");
+            AppendLastError(PQresultErrorMessage(result));
             PQclear(result);
         }
         return -1;
@@ -410,9 +401,9 @@ Postgre::UpdateStructure(const string& command)
     PGresult* result = PQexec(connection, command.c_str());
 
     if (!result || PQresultStatus(result) != PGRES_COMMAND_OK) {
-        CS_PRINT_ERRO("Postgre::UpdateStructure failed");
         if (result) {
-            CS_PRINT_ERRO(PQresultErrorMessage(result));
+            SetLastError("ExecuteModify failed: ");
+            AppendLastError(PQresultErrorMessage(result));
             PQclear(result);
         }
         return false;
@@ -426,11 +417,12 @@ Postgre::GetInsertId()
 {
     PGresult* result = PQexec(connection, "SELECT lastval()");
     if (!result) {
-        CS_PRINT_WARN("Postgre::GetInsertId - unable to get result.");
+        SetLastError("GetInsertId: unable to get result.");
         return 0;
     }
     if (PQresultStatus(result) != PGRES_TUPLES_OK) {
-        CS_VAPRT_ERRO("Postgre::GetInsertId failure:%s", PQresultErrorMessage(result));
+        SetLastError("GetInsertId Failed: ");
+        AppendLastError(PQresultErrorMessage(result));
         PQclear(result);
         return 0;
     }
@@ -459,10 +451,9 @@ Postgre::CreateUser(const string& uid, const string& pwd)
             sprintf(query, "CREATE ROLE %s CREATEROLE LOGIN ENCRYPTED PASSWORD '%s'", uid.c_str(),
                     pwd.c_str());
         if (!UpdateStructure(query)) {
-            CS_VAPRT_ERRO("Unable to create non-existing user '%s'", uid.c_str());
+            SetLastError("Unable to create non-existing user");
             return false;
         }
-        CS_VAPRT_INFO("Postgre::CreateUser - created role %s", uid.c_str());
     }
     return true;
 }
@@ -484,10 +475,9 @@ Postgre::CreateDatabase(const string& dbname, const string& owner)
     rs->query.str("");
     rs->query << "CREATE DATABASE " << dbname << " OWNER=" << owner;
     if (!UpdateStructure(rs->query.str())) {
-        CS_VAPRT_ERRO("Unable to create %s database.", dbname.c_str());
+        SetLastError("Unable to create database.");
         return false;
     }
-    CS_VAPRT_INFO("Database %s created.", dbname.c_str());
     return true;
 }
 
@@ -499,8 +489,6 @@ Postgre::CreateTable(const string& name, const string& sql)
     ostringstream qry;
     qry << "SELECT relname FROM pg_class WHERE relname='" << name << "' AND relkind='r'";
     if (!ExecuteStrFunction(qry.str(), rstbl)) {
-        if (errorId > 0)
-            return false;
         if (!UpdateStructure(sql))
             return false;
     }

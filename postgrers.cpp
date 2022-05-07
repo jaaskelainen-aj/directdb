@@ -51,12 +51,11 @@ bool
 PostgreRowSet::Query()
 {
     if (!fieldRoot) {
-        CS_PRINT_NOTE("PostgreRowSet::Query - Query called without binding variables.");
-        db->SetErrorId(9);
+        db->SetLastError("Query called without bound variables.");
         return false;
     }
     if (query.tellp() < 1) {
-        CS_PRINT_WARN("PostgreRowSet::Query - Empty query. Aborted.");
+        db->SetLastError("PostgreRowSet::Query - Empty query. Aborted.");
         return false;
     }
     if (result_complete == false)
@@ -64,8 +63,8 @@ PostgreRowSet::Query()
 
     result = PQexec(db->GetPGConn(), GetQueryBuffer(query));
     if (!result || PQresultStatus(result) != PGRES_TUPLES_OK) {
-        CS_VAPRT_ERRO("PostgreRowSet::Query failed: %s", PQresultErrorMessage(result));
-        db->SetErrorId(8);
+        db->SetLastError("Query failed:");
+        db->AppendLastError(PQresultErrorMessage(result));
         Reset();
         return false;
     }

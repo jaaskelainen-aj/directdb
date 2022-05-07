@@ -81,6 +81,7 @@ class RSInterface;
 */
 class Database
 {
+    friend class RowSet;
   public:
     Database();
     Database(Database&){};
@@ -297,19 +298,21 @@ class Database
 
     std::string GetServerName();
     std::string GetDbName();
-    std::string GetLastError();
-    //! Returns latest error code. Zero on success.
-    int GetErrorID() { return errorId; }
+
+    const char* GetLastError() { return last_error; }
+    void SetLastError(const char*);
+    void AppendLastError(const char*);
+
     //! Returns the connection port number;
     int GetPort() { return port; }
     //! Turns on one of several library features.
     bool SetFeature(const int);
-    void SetErrorId(int id);
 
     static void TrimTail(std::string*);
     static bool ExtractTimestamp(const char* result, struct tm*);
 
   protected:
+
     void reallocateScratch(size_t size)
     {
         if (size <= scratch_size)
@@ -327,11 +330,12 @@ class Database
 
     unsigned short feat_support; //!< Supported features. A bit field of feature bits.
     unsigned short feat_on;      //!< Currently selected features.
-    unsigned long errorId;       //!< Error id from the last database operation. Zero if all OK.
     short int flags;             //!< Operation flags. Combination of DDBFLAG_...
     bool commaDecimal;           //!< True if comma is decimal separator, false otherwise.
-    char* scratch_buffer;        //!< Buffer for the string cleaning
+    char*  scratch_buffer;       //!< Buffer for the string cleaning
     size_t scratch_size;         //!< size for the current buffer.
+    char*  last_error;           //!< Buffer for last error description.
+    size_t le_size;              //!< Size for last error.   
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -481,18 +485,6 @@ Database::GetDbName()
         return dbName;
     else
         return std::string("<No connection>");
-}
-
-// -------------------------------------------------------------------------------------------------
-inline void
-Database::SetErrorId(int id)
-/*!
-    This protected function is used only by library functions. It is used
-    to store the most recent error code into the database object.
-    \param id Error code of the most recent error.
-*/
-{
-    errorId = id;
 }
 
 // -------------------------------------------------------------------------------------------------

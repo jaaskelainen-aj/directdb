@@ -46,7 +46,7 @@ bool
 Sqlite::Connect(const char* filename)
 {
     if (!filename) {
-        SetErrorId(3);
+        SetLastError("Empty or incorrect connections string.");
         return false;
     }
 
@@ -54,7 +54,7 @@ Sqlite::Connect(const char* filename)
     if (errval != SQLITE_OK) {
         sqlite3_close_v2(connection);
         connection = 0;
-        SetErrorId(4);
+        SetLastError("Connection failure. Check the initialization parameters.");
         return false;
     }
     flags |= FLAG_CONNECTED;
@@ -75,7 +75,7 @@ RowSet*
 Sqlite::CreateRowSet()
 {
     if (!(flags & FLAG_CONNECTED)) {
-        SetErrorId(5);
+        SetLastError("Attempt to use member functions without a connection to the database.");
         return 0;
     }
     return new SqliteRowSet(this);
@@ -84,7 +84,7 @@ bool
 Sqlite::CreateRowSet(RSInterface* cif)
 {
     if (!(flags & FLAG_CONNECTED)) {
-        SetErrorId(5);
+        SetLastError("Attempt to use member functions without a connection to the database.");
         return false;
     }
     SqliteRowSet* rs = new SqliteRowSet(this);
@@ -127,8 +127,8 @@ Sqlite::ExecuteIntFunction(const string& query, int& val)
     if (query.length() == 0)
         return false;
     if (sqlite3_exec(connection, query.c_str(), &ExecIntCb, &data, &errmsg) != SQLITE_OK) {
-        CS_VAPRT_ERRO("Sqlite::ExecuteIntFunction - %s", errmsg);
-        errorId = 19;
+        SetLastError("ExecuteIntFunction failed: ");
+        AppendLastError(errmsg);
         return false;
     }
     if (data.rows == 0)
@@ -155,8 +155,8 @@ Sqlite::ExecuteLongFunction(const string& query, long& val)
     if (query.length() == 0)
         return false;
     if (sqlite3_exec(connection, query.c_str(), &ExecLongCb, &data, &errmsg) != SQLITE_OK) {
-        CS_VAPRT_ERRO("Sqlite::ExecuteLongFunction - %s", errmsg);
-        errorId = 19;
+        SetLastError("ExecuteLongFunction failed: ");
+        AppendLastError(errmsg);
         return false;
     }
     if (data.rows == 0)
@@ -183,8 +183,8 @@ Sqlite::ExecuteDoubleFunction(const string& query, double& val)
     if (query.length() == 0)
         return false;
     if (sqlite3_exec(connection, query.c_str(), &ExecDoubleCb, &val, &errmsg) != SQLITE_OK) {
-        CS_VAPRT_ERRO("Sqlite::ExecuteDoubleFunction - %s", errmsg);
-        errorId = 19;
+        SetLastError("ExecuteDoubleFunction failed: ");
+        AppendLastError(errmsg);
         return false;
     }
     if (data.rows == 0)
@@ -213,8 +213,8 @@ Sqlite::ExecuteBoolFunction(const string& query, bool& val)
     if (query.length() == 0)
         return false;
     if (sqlite3_exec(connection, query.c_str(), &ExecBoolCb, &data, &errmsg) != SQLITE_OK) {
-        CS_VAPRT_ERRO("Sqlite::ExecuteBoolFunction - %s", errmsg);
-        errorId = 19;
+        SetLastError("ExecuteDoubleFunction failed: ");
+        AppendLastError(errmsg);
         return false;
     }
     if (data.rows == 0)
@@ -244,8 +244,8 @@ Sqlite::ExecuteStrFunction(const string& query, string& answer)
     if (query.length() == 0)
         return false;
     if (sqlite3_exec(connection, query.c_str(), &ExecStringCb, &data, &errmsg) != SQLITE_OK) {
-        CS_VAPRT_ERRO("Sqlite::ExecuteStrFunction - %s", errmsg);
-        errorId = 19;
+        SetLastError("ExecuteStrFunction failed: ");
+        AppendLastError(errmsg);
         return false;
     }
     if (data.rows == 0)
@@ -276,8 +276,8 @@ Sqlite::ExecuteDateFunction(const string& query, tm& val)
     if (query.length() == 0)
         return false;
     if (sqlite3_exec(connection, query.c_str(), &ExecDateTimeCb, &data, &errmsg) != SQLITE_OK) {
-        CS_VAPRT_ERRO("Sqlite::ExecuteDateFunction - %s", errmsg);
-        errorId = 19;
+        SetLastError("ExecuteDateFunction failed: ");
+        AppendLastError(errmsg);
         return false;
     }
     if (data.rows == 0)
@@ -292,8 +292,8 @@ Sqlite::ExecuteModify(const string& modify)
     if (modify.length() == 0)
         return -1;
     if (sqlite3_exec(connection, modify.c_str(), 0, 0, &errmsg) != SQLITE_OK) {
-        CS_VAPRT_ERRO("Sqlite::ExecuteModify - %s", errmsg);
-        errorId = 18;
+        SetLastError("ExecuteModify failed: ");
+        AppendLastError(errmsg);
         return -1;
     }
     return sqlite3_changes(connection);
@@ -306,8 +306,8 @@ Sqlite::UpdateStructure(const string& command)
     if (command.length() == 0)
         return -1;
     if (sqlite3_exec(connection, command.c_str(), 0, 0, &errmsg) != SQLITE_OK) {
-        CS_VAPRT_ERRO("Sqlite::UpdateStructure - %s", errmsg);
-        errorId = 21;
+        SetLastError("UpdateStructure failed: ");
+        AppendLastError(errmsg);
         return false;
     }
     return true;

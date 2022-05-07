@@ -28,7 +28,6 @@ Database::Database()
 {
     feat_support = 0;
     feat_on = 0;
-    errorId = 0;
     flags = 0;
     port = 0;
 
@@ -45,6 +44,9 @@ Database::Database()
     scratch_size = 0x200;
     scratch_buffer = new char[scratch_size];
 
+    le_size = 0x400;
+    last_error = new char[le_size];
+
     RowSet::InitQueryBuffer();
 }
 // -------------------------------------------------------------------------------------------------
@@ -56,53 +58,35 @@ Database::~Database()
 {
     if (scratch_buffer)
         delete[] scratch_buffer;
+    delete[] last_error;
     RowSet::DeleteQueryBuffer();
 }
 // -------------------------------------------------------------------------------------------------
-string
-Database::GetLastError()
+void 
+Database::SetLastError(const char *text)
 {
-#define MAX_ERRORS 27
-    const char* errorStr[MAX_ERRORS] = {
-        /* 000 */ "Success",
-        /* 001 */ "Undefined error number",
-        /* 002 */ "Version 2.0 of Win socket was not found.",
-        /* 003 */ "DB - Connect: empty or incorrect connections string.",
-        /* 004 */ "DB - Connect: Connection failure. Check the initialization parameters.",
-        /* 005 */ "DB - Attempt to use member functions without a connection to the database.",
-        /* 006 */ "DB - Transaction start: Transaction is already on.",
-        /* 007 */ "DB - Commit/RollBack: The transaction has not been started.",
-        /* 008 */ "Rowset - Query function unsuccesfull.",
-        /* 009 */ "Rowset - Query called without bound variables.",
-        /* 010 */ "Unable to initialize Microsoft connection communication layer.",
-        /* 011 */
-        "DB - Connect: Attempt to connect when database has not been initialized successfully.",
-        /* 012 */ "Microsoft - MSBind called without calling Query first.",
-        /* 013 */ "Microsoft - bind function did not support desired conversion.",
-        /* 014 */ "Rowset - Requested data conversion is not supported.",
-        /* 015 */ "Rowset - Insert execution failure.",
-        /* 016 */ "Postgresql - Fatal error.",
-        /* 017 */ "Rowset - Too little memory allocated for the Insert data.",
-        /* 018 */ "DB - Modify (INSERT, UPDATE or DELETE) function was unsuccesful.",
-        /* 019 */ "DB - Execute query function was unsuccesful.",
-        /* 020 */ "Rowset - GetNext function was unsuccesful.",
-        /* 021 */
-        "DB - Update structure (CREATE, DROP, ALTER TABLE or VIEW) command was unsuccessful.",
-        /* 022 */
-        "DB - GetInsertId failed. Operation not supported or last statement was not an INSERT "
-        "command.",
-        /* 023 */ "DB - Initialization failure.",
-        /* 024 */ "DB - Transactions not supported.",
-        /* 025 */ "DB - Transaction failed.",
-        /* 026 */ "Sqlite - SQL/Transaction busy."
-    };
-    string str;
-    if (errorId >= MAX_ERRORS)
-        str = errorStr[1];
-    str = errorStr[errorId];
-    return str;
+    if(strlen(text) >= le_size) {
+        delete[] last_error;
+        le_size = strlen(text);
+        le_size += le_size/10;
+        last_error = new char[le_size];
+    }
+    strcpy(last_error, text);
 }
-
+void 
+Database::AppendLastError(const char *text)
+{
+    size_t clen = strlen(last_error);
+    size_t tlen = strlen(text);
+    if(clen + tlen >= le_size) {
+        le_size = clen + tlen + tlen/10;
+        char* new_le = new char[le_size];
+        strcpy(new_le, last_error);
+        delete[] last_error;
+        last_error = new_le;
+    }
+    strcat(last_error, text);
+}
 // -------------------------------------------------------------------------------------------------
 const char*
 Database::CleanStr(const char* str)

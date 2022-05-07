@@ -48,12 +48,11 @@ bool
 SqliteRowSet::Query()
 {
     if (!fieldRoot) {
-        CS_PRINT_NOTE("SqliteRowSet::Query - Query called without binding variables.");
-        db->SetErrorId(9);
+        db->SetLastError("Query called without bound variables.");
         return false;
     }
     if (query.tellp() < 1) {
-        CS_PRINT_WARN("SqliteRowSet::Query - Empty query string. Aborted.");
+        db->SetLastError("SqliteRowSet::Query - Empty query string. Aborted.");
         return false;
     }
     if (!result_complete)
@@ -65,7 +64,8 @@ SqliteRowSet::Query()
                                 0 /* OUT: Pointer to unused portion of zSql */
     );
     if (rv != SQLITE_OK) {
-        CS_VAPRT_ERRO("SqliteRowSet::Query - prepare failed: %s", sqlite3_errstr(rv));
+        db->SetLastError("Query - prepare failed:");
+        db->AppendLastError(sqlite3_errstr(rv));
         stmt = 0;
         return false;
     }
@@ -90,13 +90,14 @@ SqliteRowSet::GetNext()
         return 0;
     }
     if (rv == SQLITE_BUSY) {
-        CS_PRINT_WARN("SqliteRowSet::GetNext - BUSY");
+        db->SetLastError("GetNext - BUSY");
         return 0;
     }
     if (rv != SQLITE_ROW) {
         sqlite3_reset(stmt);
         result_complete = true;
-        CS_VAPRT_ERRO("SqliteRowSet::GetNext - %s", sqlite3_errstr(rv));
+        db->SetLastError("GetNext failed:");
+        db->AppendLastError(sqlite3_errstr(rv));
         return 0;
     }
     row_count++;
